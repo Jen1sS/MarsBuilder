@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Marsbuilder</title>
+  <meta charset="UTF8">
+
+  <link rel="stylesheet" type="text/css" href="./css/style2.css">
+  <link rel="icon" href="./asset/icon.png" type="image/x-icon">
+
+  <script type="importmap">
+    {
+      "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module" src="./js/game.js"></script>
+  <script type="text/javascript" src="./js/app.js"></script>
+</head>
+
+<body onload="getPlayerInfo()">
+<header>
+  Mars Builder
+  <button class="button-5" onclick="logOut()"> Log Out </button>
+  <button class="button-5" onclick="restartCity()"> Restart</button>
+  <button  class="button-5"onclick="renameCity()"> Rename City</button>
+</header>
+
+
+
+<div id="content">
+  <article id="intro">
+  <h2>Mars Builder</h2>
+  <p>
+
+  </p>
+  <div class="button-5" id="bPlay">Gioca</div>
+  </article>
+
+
+  <canvas id="threejs"></canvas>
+
+  <div id="rename">
+    <h1> New City name: </h1>
+    <label>
+      <input type="text" id="newName">
+    </label>
+    <button onclick="doRename()">Rename.</button>
+
+  </div>
+
+</div>
+<footer id="email" >
+  Hi
+</footer>
+</body>
+</html>

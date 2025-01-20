@@ -1,0 +1,220 @@
+body {
+  margin: 0;
+}
+
+/* Layout */
+body {
+  display: grid;
+  grid-template-rows: 3em auto 4vh;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+  overflow-y: hidden;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.1em;
+  font-size: 2em;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+  background-image: url('../asset/mars.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+
+/* Footer */
+footer {
+  background-color: black;
+  color: white;
+  text-align: center;
+  padding-top: 0.6em;
+
+  background-image: url('../asset/mars.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+
+
+/* Button Styles */
+#qbutton, #bPlay {
+  width: 50%;
+  font-size: 2em;
+  padding: 0.5em;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  left: 25%;
+  top: 40%;
+  transform: translateX(-50%);
+}
+
+/* Button Hover Effects */
+#qbutton:hover, #bPlay:hover {
+  box-shadow: 0 -1px 4px #FFF, 0 -1px 5px #ff0, 0 -5px 10px #ff8000, 0 -9px 20px #F00;
+}
+
+/* Message Display */
+#message {
+  width: 100vw;
+  font-size: 3em;
+  text-align: center;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  padding-top: 0.5em;
+  color: #FFFFFF;
+  text-shadow: 0 -1px 4px #FFF, 0 -2px 10px #ff0, 0 -10px 20px #ff8000, 0 -18px 40px #F00;
+  display: none;
+}
+
+/* Content Section */
+#content {
+  position: relative;
+  background-color: #555555;
+}
+
+/* Three.js Section */
+#threejs {
+  background-color: #4b4b4b;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: none;
+  overflow-y: hidden;
+}
+
+/* Intro Section */
+#intro {
+  text-align: center;
+  width: 60vw;
+  height: 60vh;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow-y: hidden;
+  font-size: 1.5em;
+  color: white;
+  background: linear-gradient(180deg, rgba(10,10,10,1) 0%, rgba(10, 10, 10, 0) 100%);
+  border-radius: 1em;
+  padding: 0.8em;
+}
+
+h2 {
+  font-size: 4rem;
+}
+
+
+
+
+#rename {
+  display: none;
+
+  position: fixed;
+  top: 60px;
+  left: 20px;
+  width: 250px;
+  height: 150px;
+  background-color: #808080;
+  border: 0.5rem solid #ffffff;
+  border-radius: 1rem;
+  padding: 0.5rem;
+  overflow: auto;
+}
+
+#elements {
+  overflow: scroll;
+}
+
+.element {
+  width: 90%;
+  margin-left: 5%;
+  background-color: white;
+  padding: 0.1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.element:hover {
+  animation: hoverAnimation 0.3s forwards;
+}
+
+
+@keyframes hoverAnimation {
+  0% {
+    background-color: white;
+    transform: scale(1);
+    padding: 0.1rem;
+  }
+  100% {
+    background-color: darkgray;
+    transform: scale(1.05);
+    padding: 0.2rem;
+  }
+}
+
+.element {
+
+}
+
+.button-5 {
+  align-items: center;
+  background-clip: padding-box;
+  background-color: #fa2e00;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: system-ui,-apple-system,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  justify-content: center;
+  line-height: 1.25;
+  margin: 0;
+  min-height: 2rem; /* Adjusted from 3rem to 2rem */
+  padding: calc(.5rem - 1px) calc(1rem - 1px); /* Adjusted padding */  position: relative;
+  text-decoration: none;
+  transition: all 250ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: baseline;
+  width: auto;
+}
+
+.button-5:hover,
+.button-5:focus {
+  background-color: #fb8332;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+}
+
+.button-5:hover {
+  transform: translateY(-1px);
+}
+
+.button-5:active {
+  background-color: #c85000;
+  box-shadow: rgba(0, 0, 0, .06) 0 2px 4px;
+  transform: translateY(0);
+}
+
+/* Links */
+a:link, a:visited {
+  color: cornsilk;
+  text-decoration: none;
+}
+
+a:hover {
+  font-weight: bold;
+}
+

@@ -1,0 +1,63 @@
+<html>
+<head>
+    <title>MarsBuilder Login</title>
+    <link type="text/css" rel="stylesheet" href="./css/style.css">
+    <script src="js/login.js"></script>
+</head>
+
+
+<body onload="checkSession()">
+<header>Mars Builder</header>
+<div id="content">
+    <div class="panel" id="signin">
+        <div class="title">Sign In</div>
+
+        <div class="data-panel">
+            <label>Email</label>
+            <input id="r-email" type="email">
+
+            <label>Nickname</label>
+            <input id="r-nickname" type="text">
+
+            <label>Password</label>
+            <input id="r-password" type="password">
+
+            <label>Conferma Password</label>
+            <input id="r-cpassword" type="password"> <br>
+
+            <label id="errors"></label>
+        </div>
+
+        <div class="select">
+            <div class="button-bar">
+                <button onclick="register()">Registrati!</button>
+            </div>
+            <div class="button-bar">
+                <button onclick="goToGoogle();">Annulla :(</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" id="login">
+        <div class="title">Log In</div>
+
+        <div class="data-panel">
+            <label>Email</label>
+            <input id="l-email" type="email">
+
+            <label>Password</label>
+            <input id="l-password" type="password">
+        </div>
+
+        <div class="select">
+            <div class="button-bar">
+                <button onclick="login()">Log In!</button>
+            </div>
+            <div class="button-bar">
+                <button onclick="goToGoogle();">Annulla :(</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
