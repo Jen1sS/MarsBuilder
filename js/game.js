@@ -1,17 +1,30 @@
+/**
+ * Imports
+ */
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import Stats from 'three/addons/libs/stats.module.js'
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
+/**
+ *  Elements that are used to show the scene and the camera
+ */
 let renderer = null;      // Il motore di render
-//TODO ORDINA TUTTO
 let scene = null;         // la scena radice
 let sceneHUD = null;         // la scena radice
 let camera = null;        // la camera da cui renderizzare la scena
 let cameraHUD = null;     // la camera da cui visualizzare la HUD
-let audiolistener = null; // L'oggetto per sentire i suoni del gioco
-let clock = null;         // Oggetto per la gestione del timinig della scena
 
+
+/**
+ * Audio elements
+ */
+let audiolistener = null; // L'oggetto per sentire i suoni del gioco
+
+/**
+ * Basic terrain map
+ * @type {string}
+ */
 let jsonMap = '{"row": 10, "col": 10, "data": ' +
     '[' +
     '[{"cat": 5, "rot":1}, {"cat": 3, "rot":1}, {"cat": 3, "rot":1}, {"cat": 3, "rot":1}, {"cat": 3, "rot":1}, {"cat": 3, "rot":1}, {"cat": 3, "rot":1}, {"cat": 3, "rot":1}, {"cat": 3, "rot":1}, {"cat": 4, "rot":1}],' +
@@ -28,37 +41,74 @@ let jsonMap = '{"row": 10, "col": 10, "data": ' +
 
 
 /**
- * L'array delle mesh delle pedine che costituiscono la board
+ * Array that contains the terrain parts to create the map
  */
 let meshBoard = [];
 
 /**
- * Il set dei valori che rappresentano la board
- */
-let board = [];
-
-/**
- * Luce direzionale, al momento non è utile
+ * Lights used for the game
+ *  - sunLight: The light of the sun
+ *  - HUDlight: The light for the HUD elements
+ *  - nLight: The ambient light for the nighttime
+ *  - Lights: The array of the streetlamps
  */
 let sunLight = null;
-let dlHUD = null;
-let nlight = null;
+let HUDlight = null;
+let nLight = null;
+let lights = [];
+
+/**
+ * Clock used to get the delta time
+ */
+let clock = null;
+let dt;
+let lastFrameTime = 0;
+
+/**
+ * Afk time management
+ * @type {number}
+ */
 let idleTime = 0;
+let idleTrigger = 10;
+let dayDuration = 120000
 
-
-//PERFORMANCE MONITORING
-let performance=false;
+/**
+ * Performance monitoring
+ *  - perfTrigger: Trigger which activates the performance panel
+ */
+let perfTrigger=false;
 const stats = new Stats()
-if (performance) stats.showPanel(0)
+const maxFPS = 165;
 
-//ORBIT
+/**
+ * Orbital controls
+ */
 let controls;
 
-if (performance) document.body.appendChild(stats.dom)
+/**
+ * Game logic
+ */
+let elements = [];
+let elementsId = [];
+let selected;
+let elementLoaded;
+let open = false //opens the HUD
+let editMode = false; //activates editing mode
+let lastSquare = undefined;
+let loaded = false;
+let tileCoord;
+let ready = false;
+let v = new THREE.Vector3(0, 0, 0);
+
+/**
+ * Raycasting
+ */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
 
 
-/*
- * Inizializza il motore
+/**
+ * Game initializer
  */
 function initScene() {
     document.getElementById("intro").style.display = "none";
@@ -66,6 +116,8 @@ function initScene() {
 
     if (renderer != null) return;
 
+
+    //Canvas setup
     let canv = document.getElementById("threejs");
 
     let width = canv.clientWidth;
@@ -73,12 +125,18 @@ function initScene() {
     canv.width = canv.clientWidth;
     canv.height = canv.clientHeight;
 
+
+    //Performance monitoring
+    if (perfTrigger) stats.showPanel(0)
+    if (perfTrigger) document.body.appendChild(stats.dom)
+
+
+    //Renderer setup
     renderer = new THREE.WebGLRenderer({
         antialias: "true",
         powerPreference: "high-performance",
         canvas: canv
     });
-
 
     renderer.autoClear = false;
     renderer.setSize(width, height);
@@ -86,33 +144,37 @@ function initScene() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap // (default)
 
+    //Camera setup
     camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 500);
-
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.enablePan = false;
-    controls.autoRotateSpeed=0;
 
     cameraHUD = new THREE.PerspectiveCamera(50, width / height, 0.1, 20);
     cameraHUD.position.set(20, 0, 0);
     cameraHUD.lookAt(0, 0, 0);
     cameraHUD.updateProjectionMatrix();
 
+    //Orbital controls setup
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.autoRotateSpeed=0;
+
+    //Audio setup
     audiolistener = new THREE.AudioListener();
     camera.add(audiolistener);
 
+    //Clock setup
     clock = new THREE.Clock();
 
+    //Scene setup
     scene = new THREE.Scene();
     sceneHUD = new THREE.Scene();
 
+    //Lights setup
     sunLight = new THREE.DirectionalLight(0xFFFFEE, 3);
     sunLight.castShadow = true
 
-    // Increase shadow map size for better quality
     sunLight.shadow.mapSize.width = 4096;
     sunLight.shadow.mapSize.height = 4096;
 
-    // Adjust shadow camera settings
     sunLight.shadow.camera.near = 0.5;
     sunLight.shadow.camera.far = 500;
     sunLight.shadow.camera.left = -50;
@@ -123,85 +185,21 @@ function initScene() {
     scene.add(sunLight);
 
 
-    nlight = new THREE.AmbientLight(0xaaaaff,0.2);
-    scene.add(nlight);
+    nLight = new THREE.AmbientLight(0xaaaaff,0.2);
+    scene.add(nLight);
 
-    dlHUD = new THREE.AmbientLight(0xFFFFFF, 1);
-    sceneHUD.add(dlHUD)
+    HUDlight = new THREE.AmbientLight(0xFFFFFF, 1);
+    sceneHUD.add(HUDlight)
 
+    //Board creation
     createBoard();
 
     renderer.setAnimationLoop(animate);
 }
 
 
-let added = false;
-
-let lights = [];
-/*CITTA CREATION*/
-async function getCityInfo() {
-
-
-    let res = await fetch("./api/buildingscity_get.php");
-
-    let buildings = await res.json();
-
-
-    if (buildings.length !== 0 && !added) {
-
-        let loader = new GLTFLoader();
-
-        added = true;
-
-        for (let i = 0; i < buildings.length; i++) {
-            let b = buildings[i];
-
-            loader.load(b.modello3D, (gltf) => {
-                //Carica la mesh
-                let mesh = gltf.scene.children[0];
-                //Calcola la posizione nella griglia tridimensionale
-                let p = Math.floor(b.posizione / 100);
-                let r = Math.floor(b.posizione / 10);
-                let c = b.posizione % 10;
-                //Posiziona l'ogg
-                mesh.position.set(r * 2, p * 2, c * 2);
-                mesh.rotation.y = parseFloat(b.rotazione);
-                meshBoard[c][r].linked = true;
-
-
-                if (mesh.name.includes("lights")) {
-                    lights.push(new THREE.PointLight(0xffffaa,2))
-                    lights[lights.length-1].castShadow = true
-                    lights[lights.length-1].position.set(r * 2, 0.8, c * 2)
-                    scene.add(lights[lights.length-1]);
-                }
-
-                mesh.traverse((node) => {
-                    if (node.isMesh) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                    }
-                });
-
-                //Aggiunge l'ogg alla scena
-                scene.add(mesh);
-
-            })
-
-        }
-        console.log("Found saved map...");
-        return true;
-    } else if (buildings.length === 0) {
-        console.log("Creating new map...");
-        return false;
-    } else return true;
-
-}
-
 /**
- * Crea la board di gioco
- * @param {Number} max Il numero di elementi complessivi della board; deve essere un numero divisibile per 4
- * @param {Number} size Le dimensioni della geometria
+ * Creates the Map
  */
 function createBoard() {
     let map = JSON.parse(jsonMap);
@@ -323,51 +321,13 @@ function createBoard() {
     controls.update();
 }
 
-
-let elements = [];
-let elementsId = [];
-let selected;
-let elementLoaded;
-
-async function loadConstructions() {
-    let res = await fetch("./api/buildings_get.php", {
-        method: "POST",
-    })
-
-    res = await res.json();
-    let list = [];
-    let loader = new GLTFLoader();
-
-
-    for (let i in res) list.push([i, res [i]]);
-
-
-    for (let i = 0; i < list.length; i++) {
-        await loader.load(list[i][1][1], async (gltf) => {
-
-            let obj = gltf.scene;
-            obj.position.set(10, 0, i * 5);
-
-            sceneHUD.add(obj);
-            elements.push(obj);
-            elementsId.push(list[i][1][3])
-        });
-    }
-    selected = 0;
-    cameraHUD.position.set(20, 4, 0);
-}
-
 /**
- * Anima la scena e la renderizza
+ * Called every frame
+ * @param timestamp
  */
-let dt;
-
-let lastFrameTime = 0;
-const maxFPS = 120;
-
 function animate(timestamp) {
 
-    if (performance) stats.begin();
+    if (perfTrigger) stats.begin();
 
     const delta = timestamp - lastFrameTime;
     if (delta < 1000 / maxFPS) {
@@ -388,27 +348,9 @@ function animate(timestamp) {
     renderer.render(sceneHUD, cameraHUD);
 
     render();
-    if (performance) stats.end();
+    if (perfTrigger) stats.end();
 
 }
-
-/**/
-
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
-
-function onPointerMove(event) {
-    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    idleTime=0;
-}
-
-let lastSquare = undefined;
-let loaded = false;
-let tileCoord;
-let ready = false;
-let v = new THREE.Vector3(0, 0, 0);
-
 function render() {
 
     if (camera !== null && scene !== null) {
@@ -430,7 +372,7 @@ function render() {
         sunLight.position.set(c.x, c.y, 0);
         //endregion
 
-        if (idleTime<10) {
+        if (idleTime<idleTrigger) {
             if (controls.autoRotateSpeed>0) controls.autoRotateSpeed-=dt*4;
             else {
                 //region Selecting tile
@@ -459,7 +401,7 @@ function render() {
                     if (ready && first !== -1) tileCoord = intersects[first].object.parent.position;
 
                     if ((!intersects[0].object.name.includes("terrain") || intersects[0].object.parent.linked) && editMode) intersects[0].object.material.emissive.set(0xaa0000);
-                    else intersects[0].object.material.emissive.set(0xaaaaaa);
+                    else intersects[0].object.material.emissive.set(0x666666);
 
                     if (lastSquare !== undefined && intersects[0].object.material.emissive !== lastSquare.object.material.emissive) {
                         lastSquare.object.material.emissive.set(0x000000);
@@ -508,7 +450,7 @@ function render() {
 
                         scene.add(elementLoaded);
                         loaded = true;
-                    } else elementLoaded.children[0].material.emissive.set(0xaaaaaa)
+                    } else elementLoaded.children[0].material.emissive.set(0x666666)
                     if (tileCoord !== undefined && tileCoord.x !== 0 && tileCoord.z !== 0) elementLoaded.position.set(tileCoord.x, tileCoord.y, tileCoord.z);
 
                 } else {
@@ -520,11 +462,124 @@ function render() {
                 }
                 //endregion
             }
-        } else if (controls.autoRotateSpeed<2) controls.autoRotateSpeed+=dt;
+        } else if (controls.autoRotateSpeed<2) {
+            controls.autoRotateSpeed+=dt;
+
+            editMode=false;
+            if (loaded) {
+                elementLoaded.children[0].material.emissive.set(0x000000)
+                scene.remove(elementLoaded);
+                loaded = false
+            }
+
+            open=false;
+            if (cameraHUD.position.y < 7.5) cameraHUD.position.y += dt * 5;
+            else cameraHUD.position.y = 7.5;
+        }
     }
 
 }
 
+/**
+ * Loads all the buildings of the city (if any)
+ * @returns {Promise<boolean>}
+ */
+let added = false;
+async function getCityInfo() {
+
+
+    let res = await fetch("./api/buildingscity_get.php");
+
+    let buildings = await res.json();
+
+
+    if (buildings.length !== 0 && !added) {
+
+        let loader = new GLTFLoader();
+
+        added = true;
+
+        for (let i = 0; i < buildings.length; i++) {
+            let b = buildings[i];
+
+            loader.load(b.modello3D, (gltf) => {
+                //Carica la mesh
+                let mesh = gltf.scene.children[0];
+                //Calcola la posizione nella griglia tridimensionale
+                let p = Math.floor(b.posizione / 100);
+                let r = Math.floor(b.posizione / 10);
+                let c = b.posizione % 10;
+                //Posiziona l'ogg
+                mesh.position.set(r * 2, p * 2, c * 2);
+                mesh.rotation.y = parseFloat(b.rotazione);
+                meshBoard[c][r].linked = true;
+
+
+                if (mesh.name.includes("lights")) {
+                    lights.push(new THREE.PointLight(0xffffaa,2))
+                    lights[lights.length-1].castShadow = true
+                    lights[lights.length-1].position.set(r * 2, 0.8, c * 2)
+                    scene.add(lights[lights.length-1]);
+                }
+
+                mesh.traverse((node) => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+
+                //Aggiunge l'ogg alla scena
+                scene.add(mesh);
+
+            })
+
+        }
+        console.log("Found saved map...");
+        return true;
+    } else if (buildings.length === 0) {
+        console.log("Creating new map...");
+        return false;
+    } else return true;
+
+}
+
+
+/**
+ * Adds all the buildings you can build
+ */
+async function loadConstructions() {
+    let res = await fetch("./api/buildings_get.php", {
+        method: "POST",
+    })
+
+    res = await res.json();
+    let list = [];
+    let loader = new GLTFLoader();
+
+
+    for (let i in res) list.push([i, res [i]]);
+
+
+    for (let i = 0; i < list.length; i++) {
+        await loader.load(list[i][1][1], async (gltf) => {
+
+            let obj = gltf.scene;
+            obj.position.set(10, 0, i * 5);
+
+            sceneHUD.add(obj);
+            elements.push(obj);
+            elementsId.push(list[i][1][3])
+        });
+    }
+    selected = 0;
+    cameraHUD.position.set(20, 4, 0);
+}
+
+/**
+ * Places the building when confirming it
+ * @returns {Promise<void>}
+ */
 async function confirmPlacement() {
     scene.add(createIndependentClone(elementLoaded));
     let sum = elementLoaded.position.z / 2 + elementLoaded.position.x / 2 * 10
@@ -554,6 +609,11 @@ async function confirmPlacement() {
     } else console.log("ERROR " + sum)
 }
 
+/**
+ * Creates a copy unlinked copy of an object
+ * @param original
+ * @returns {*}
+ */
 function createIndependentClone(original) {
     const clone = original.clone(true);
 
@@ -575,13 +635,38 @@ function createIndependentClone(original) {
     return clone;
 }
 
+/**
+ * Confronts 2 vectors
+ * @param v vector 1
+ * @param v2 vector 2
+ * @param epsilon bearable error
+ * @returns {boolean} are equal?
+ */
 function equals(v, v2, epsilon = Number.EPSILON) {
     return ((Math.abs(v.x - v2.x) < epsilon) && (Math.abs(v.z - v2.z) < epsilon));
 }
 
+/**
+ * Lerps the camera to a vector
+ * @param v the vector to lerp to
+ */
+function lerpToHUD(v) {
+    cameraHUD.position.lerp(v, 4 * dt);
+}
 
-let open = false
-let editMode = false;
+/**
+ * Calculates the path of the sun
+ * @param radius distance from 0,0,0
+ * @returns {{x: number, y: number}} x and y coordinates of the sun
+ */
+function sun(radius) {
+    return {
+        x: (Math.sin((Date.now() % dayDuration) / dayDuration * Math.PI * 2) * radius),
+        y: (Math.cos((Date.now() % dayDuration) / dayDuration * Math.PI * 2) * radius)
+    };
+}
+
+//Keyboard listener
 document.addEventListener('keydown', (key) => {
     key = key.code;
     if (cameraHUD !== null) {
@@ -617,18 +702,18 @@ document.addEventListener('keydown', (key) => {
 
 })
 
-function lerpToHUD(v) {
-    cameraHUD.position.lerp(v, 4 * dt);
+//Mouse listeners
+window.addEventListener("mousedown",()=>{
+    idleTime=0;
+})
+window.addEventListener('pointermove', onPointerMove);
+function onPointerMove(event) {
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 }
 
-window.addEventListener('pointermove', onPointerMove);
-
-window.requestAnimationFrame(render);
-
-document.getElementById("bPlay").addEventListener("click", () => setTimeout(initScene, 100), false);
-
-window.addEventListener('resize',
-    () => {
+//Called on window resize
+window.addEventListener('resize', () => {
         const width = window.innerWidth;
         const height = window.innerHeight;
         camera.aspect = width / height;
@@ -638,19 +723,11 @@ window.addEventListener('resize',
         renderer.setSize(width, height);
         setCanvasDimensions(renderer.domElement, width, height);
     });
-
-function sun(radius) {
-    return {
-        x: (Math.sin((Date.now() % 60000) / 60000 * Math.PI * 2) * radius),
-        y: (Math.cos((Date.now() % 60000) / 60000 * Math.PI * 2) * radius)
-    };
-}
-
-window.addEventListener("click",()=>{
-    idleTime=0;
-})
-
 function setCanvasDimensions(canvas, width, height) {
     canvas.width = width;
     canvas.height = height;
 }
+
+window.requestAnimationFrame(render);
+document.getElementById("bPlay").addEventListener("click", () => setTimeout(initScene, 100), false);
+
