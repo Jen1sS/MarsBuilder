@@ -45,6 +45,7 @@ let jsonMap = '{"row": 10, "col": 10, "data": ' +
  */
 let meshBoard = [];
 
+
 /**
  * Lights used for the game
  *  - sunLight: The light of the sun
