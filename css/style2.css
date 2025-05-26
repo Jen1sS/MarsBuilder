@@ -8,7 +8,6 @@ body {
   grid-template-rows: 3em auto 4vh;
   height: 100vh;
   font-family: Arial, sans-serif;
-  overflow-y: hidden;
 }
 
 /* Header */
@@ -87,7 +86,6 @@ footer {
   width: 100%;
   height: 100%;
   display: none;
-  overflow-y: hidden;
 }
 
 /* Intro Section */
@@ -99,7 +97,6 @@ footer {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  overflow-y: hidden;
   font-size: 1.5em;
   color: white;
   background: linear-gradient(180deg, rgba(10,10,10,1) 0%, rgba(10, 10, 10, 0) 100%);
@@ -218,3 +215,26 @@ a:hover {
   font-weight: bold;
 }
 
+.icona{
+  width: 2.5rem;
+  height: 2.5rem;
+  align-self: center;
+  padding-bottom: 0.5rem;
+}
+
+#email{
+  display: flex;
+}
+
+#risorse{
+  padding-left: 28%;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+}
+
+.resource-item .icon {
+  margin-right: 10px; /* Adjust the spacing as needed */
+}
